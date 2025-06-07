@@ -10,31 +10,55 @@ interface SearchSummaryProps {
 }
 
 const SearchSummary = ({ totalResults, topKeyword, searchTerm }: SearchSummaryProps) => {
+  // Tags simuladas baseadas na pesquisa
+  const mockTags = [
+    'machine learning',
+    'inteligência artificial',
+    'deep learning',
+    'algoritmos',
+    'redes neurais',
+    'diagnóstico médico',
+    'imagens médicas',
+    'processamento'
+  ];
+
+  const summaryText = `A busca por "${searchTerm}" retornou ${totalResults} documentos científicos relevantes. Os resultados abrangem principalmente pesquisas relacionadas a ${topKeyword} e suas aplicações em diferentes áreas. A análise dos documentos mostra uma concentração de estudos em métodos computacionais avançados e suas implementações práticas na área da saúde e medicina.`;
+
   return (
-    <Card className="w-full max-w-4xl mx-auto mb-6 border-2 border-primary/20">
-      <CardHeader className="pb-3">
+    <Card className="w-full max-w-4xl mx-auto mb-6 shadow-md border-0 bg-card">
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl text-foreground">
-            Sumário da Busca (IA)
+          <CardTitle className="text-xl font-medium text-foreground">
+            Sumário
           </CardTitle>
-          <Badge variant="secondary" className="bg-primary/10 text-primary">
+          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
             Gerado por IA
           </Badge>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-4 bg-secondary/50 rounded-lg">
-            <div className="text-2xl font-bold text-primary">{totalResults}</div>
-            <div className="text-sm text-muted-foreground">Documentos encontrados</div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Coluna da esquerda - Resumo */}
+          <div className="lg:col-span-2">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {summaryText}
+            </p>
           </div>
-          <div className="text-center p-4 bg-secondary/50 rounded-lg">
-            <div className="text-lg font-semibold text-foreground truncate">"{topKeyword}"</div>
-            <div className="text-sm text-muted-foreground">Palavra-chave mais relevante</div>
-          </div>
-          <div className="text-center p-4 bg-secondary/50 rounded-lg">
-            <div className="text-lg font-semibold text-foreground truncate">"{searchTerm}"</div>
-            <div className="text-sm text-muted-foreground">Termo pesquisado</div>
+          
+          {/* Coluna da direita - Tags */}
+          <div className="lg:col-span-1">
+            <h4 className="text-sm font-medium text-foreground mb-3">Tags mais relevantes</h4>
+            <div className="flex flex-col gap-2">
+              {mockTags.slice(0, 6).map((tag, index) => (
+                <Badge 
+                  key={index} 
+                  variant="outline" 
+                  className="justify-start text-xs py-1.5 bg-secondary/50 border-border hover:bg-secondary/70 transition-colors"
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
       </CardContent>
