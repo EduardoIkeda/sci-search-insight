@@ -1,11 +1,15 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SearchHeader from '@/components/SearchHeader';
 import SearchBar from '@/components/SearchBar';
 import SearchSummary from '@/components/SearchSummary';
 import SearchResult from '@/components/SearchResult';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import NoResults from '@/components/NoResults';
+import ResearcherCard from '@/components/ResearcherCard';
+import ArticleOverlay from '@/components/ArticleOverlay';
+import SearchPagination from '@/components/SearchPagination';
 
 interface SearchResultData {
   id: string;
@@ -15,13 +19,32 @@ interface SearchResultData {
   volume?: string;
   issue?: string;
   abstractHighlight: string;
+  abstract: string;
+  doi?: string;
+  authors: Array<{ id: string; name: string }>;
+  tags: string[];
+}
+
+interface ResearcherData {
+  id: string;
+  name: string;
+  title: string;
+  hIndex: number;
+  photo: string;
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchType, setSearchType] = useState<'artigo' | 'pesquisador'>('artigo');
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [results, setResults] = useState<SearchResultData[]>([]);
+  const [researchers, setResearchers] = useState<ResearcherData[]>([]);
+  const [selectedArticle, setSelectedArticle] = useState<SearchResultData | null>(null);
+  const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   // Dados de exemplo para demonstração
   const mockResults: SearchResultData[] = [
@@ -32,33 +55,46 @@ const Index = () => {
       year: 2023,
       volume: '29',
       issue: '3',
-      abstractHighlight: 'Recent developments in machine learning have revolutionized healthcare diagnostics, enabling more accurate and faster detection of diseases. This study presents a comprehensive analysis of machine learning algorithms applied to medical imaging and patient data...'
+      abstractHighlight: 'Recent developments in machine learning have revolutionized healthcare diagnostics, enabling more accurate and faster detection of diseases...',
+      abstract: 'Recent developments in machine learning have revolutionized healthcare diagnostics, enabling more accurate and faster detection of diseases. This study presents a comprehensive analysis of machine learning algorithms applied to medical imaging and patient data, demonstrating significant improvements in diagnostic accuracy across multiple medical specialties.',
+      doi: '10.1038/s41591-023-01234-5',
+      authors: [
+        { id: '1', name: 'Dr. Maria Silva Santos' },
+        { id: '2', name: 'Dr. João Paulo Lima' }
+      ],
+      tags: ['machine learning', 'healthcare', 'diagnostics', 'medical imaging']
+    },
+    // ... outros resultados similares
+  ];
+
+  const mockResearchers: ResearcherData[] = [
+    {
+      id: '1',
+      name: 'Dr. Maria Silva Santos',
+      title: 'Doutora em Ciência da Computação',
+      hIndex: 25,
+      photo: 'https://images.unsplash.com/photo-1494790108755-2616b612b5bc?w=400&h=400&fit=crop&crop=face'
     },
     {
       id: '2',
-      title: 'Climate Change Impact on Biodiversity: A Global Perspective',
-      journal: 'Science',
-      year: 2023,
-      volume: '381',
-      issue: '6653',
-      abstractHighlight: 'Climate change poses unprecedented challenges to global biodiversity. Our research analyzes the impact of rising temperatures and changing precipitation patterns on various ecosystems worldwide...'
+      name: 'Dr. João Paulo Lima',
+      title: 'Doutor em Inteligência Artificial',
+      hIndex: 18,
+      photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face'
     },
     {
       id: '3',
-      title: 'Quantum Computing Breakthroughs in Cryptography',
-      journal: 'Physical Review Letters',
-      year: 2023,
-      volume: '130',
-      issue: '8',
-      abstractHighlight: 'The advent of quantum computing presents both opportunities and challenges for modern cryptography. This paper explores recent breakthroughs in quantum algorithms that could potentially break current encryption methods...'
+      name: 'Dra. Ana Costa Ferreira',
+      title: 'Doutora em Medicina',
+      hIndex: 32,
+      photo: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face'
     },
     {
       id: '4',
-      title: 'Sustainable Energy Solutions for Urban Development',
-      journal: 'Energy Policy',
-      year: 2023,
-      volume: '175',
-      abstractHighlight: 'Urban areas consume over 70% of global energy production. This research examines sustainable energy solutions that can be implemented in urban development projects to reduce carbon footprint and improve energy efficiency...'
+      name: 'Dr. Carlos Eduardo Silva',
+      title: 'Doutor em Engenharia Biomédica',
+      hIndex: 22,
+      photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face'
     }
   ];
 
@@ -67,28 +103,42 @@ const Index = () => {
 
     setIsLoading(true);
     setHasSearched(true);
+    setCurrentPage(1);
     
     // Simular chamada de API
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Filtrar resultados baseado no termo de busca (simulação)
-    const filteredResults = searchTerm.toLowerCase().includes('machine') 
-      ? mockResults.filter(result => result.title.toLowerCase().includes('machine'))
-      : searchTerm.toLowerCase().includes('climate')
-      ? mockResults.filter(result => result.title.toLowerCase().includes('climate'))
-      : searchTerm.toLowerCase().includes('quantum')
-      ? mockResults.filter(result => result.title.toLowerCase().includes('quantum'))
-      : mockResults;
+    if (searchType === 'artigo') {
+      const filteredResults = mockResults;
+      setResults(filteredResults);
+      setTotalPages(Math.ceil(filteredResults.length / 5));
+    } else {
+      const filteredResearchers = mockResearchers;
+      setResearchers(filteredResearchers);
+      setTotalPages(Math.ceil(filteredResearchers.length / 8));
+    }
     
-    setResults(filteredResults);
     setIsLoading(false);
   };
 
-  const getTotalResults = () => results.length;
+  const handleArticleClick = (article: SearchResultData) => {
+    setSelectedArticle(article);
+    setIsOverlayOpen(true);
+  };
+
+  const handleAuthorClick = (authorId: string) => {
+    setIsOverlayOpen(false);
+    navigate(`/researcher/${authorId}`);
+  };
+
+  const handleResearcherClick = (researcherId: string) => {
+    navigate(`/researcher/${researcherId}`);
+  };
+
+  const getTotalResults = () => searchType === 'artigo' ? results.length : researchers.length;
   const getTopKeyword = () => {
     if (searchTerm.toLowerCase().includes('machine')) return 'algoritmos';
     if (searchTerm.toLowerCase().includes('climate')) return 'temperatura';
-    if (searchTerm.toLowerCase().includes('quantum')) return 'criptografia';
     return 'pesquisa';
   };
 
@@ -105,6 +155,8 @@ const Index = () => {
               onSearchChange={setSearchTerm}
               onSearch={handleSearch}
               isLoading={isLoading}
+              searchType={searchType}
+              onSearchTypeChange={setSearchType}
             />
           </div>
         </div>
@@ -114,35 +166,80 @@ const Index = () => {
           <div className="max-w-6xl mx-auto">
             {isLoading ? (
               <LoadingSpinner />
-            ) : results.length > 0 ? (
-              <>
-                <SearchSummary
-                  totalResults={getTotalResults()}
-                  topKeyword={getTopKeyword()}
-                  searchTerm={searchTerm}
-                />
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {results.map((result) => (
-                    <SearchResult
-                      key={result.id}
-                      title={result.title}
-                      journal={result.journal}
-                      year={result.year}
-                      volume={result.volume}
-                      issue={result.issue}
-                      abstractHighlight={result.abstractHighlight}
-                      searchTerm={searchTerm}
-                    />
-                  ))}
-                </div>
-              </>
             ) : (
-              <NoResults searchTerm={searchTerm} />
+              <>
+                {/* Sumário apenas para artigos */}
+                {searchType === 'artigo' && results.length > 0 && (
+                  <SearchSummary
+                    totalResults={getTotalResults()}
+                    topKeyword={getTopKeyword()}
+                    searchTerm={searchTerm}
+                  />
+                )}
+
+                {/* Resultados */}
+                {searchType === 'artigo' ? (
+                  results.length > 0 ? (
+                    <div className="space-y-4">
+                      {results.map((result) => (
+                        <SearchResult
+                          key={result.id}
+                          title={result.title}
+                          journal={result.journal}
+                          year={result.year}
+                          volume={result.volume}
+                          issue={result.issue}
+                          abstractHighlight={result.abstractHighlight}
+                          searchTerm={searchTerm}
+                          onClick={() => handleArticleClick(result)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <NoResults searchTerm={searchTerm} />
+                  )
+                ) : (
+                  researchers.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {researchers.map((researcher) => (
+                        <ResearcherCard
+                          key={researcher.id}
+                          id={researcher.id}
+                          name={researcher.name}
+                          title={researcher.title}
+                          hIndex={researcher.hIndex}
+                          photo={researcher.photo}
+                          onClick={handleResearcherClick}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <NoResults searchTerm={searchTerm} />
+                  )
+                )}
+
+                {/* Paginação */}
+                {((searchType === 'artigo' && results.length > 0) || 
+                  (searchType === 'pesquisador' && researchers.length > 0)) && (
+                  <SearchPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                )}
+              </>
             )}
           </div>
         )}
       </main>
+
+      {/* Overlay de artigo */}
+      <ArticleOverlay
+        article={selectedArticle}
+        isOpen={isOverlayOpen}
+        onClose={() => setIsOverlayOpen(false)}
+        onAuthorClick={handleAuthorClick}
+      />
     </div>
   );
 };

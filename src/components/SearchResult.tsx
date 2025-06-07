@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 interface SearchResultProps {
@@ -11,6 +11,7 @@ interface SearchResultProps {
   issue?: string;
   abstractHighlight: string;
   searchTerm: string;
+  onClick?: () => void;
 }
 
 const SearchResult = ({ 
@@ -20,7 +21,8 @@ const SearchResult = ({
   volume, 
   issue, 
   abstractHighlight, 
-  searchTerm 
+  searchTerm,
+  onClick 
 }: SearchResultProps) => {
   const highlightText = (text: string, term: string) => {
     if (!term) return text;
@@ -30,9 +32,9 @@ const SearchResult = ({
     
     return parts.map((part, index) => 
       regex.test(part) ? (
-        <mark key={index} className="bg-yellow-200 px-1 rounded">
+        <strong key={index} className="font-bold text-foreground">
           {part}
-        </mark>
+        </strong>
       ) : (
         part
       )
@@ -47,26 +49,36 @@ const SearchResult = ({
   ].filter(Boolean).join(', ');
 
   return (
-    <Card className="h-full hover:shadow-lg transition-all duration-200 border hover:border-primary/30">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg leading-tight line-clamp-2 hover:text-primary transition-colors">
-          {title}
-        </CardTitle>
-        <div className="flex flex-wrap items-center gap-2 mt-2">
-          <Badge variant="outline" className="text-xs">
-            {year}
-          </Badge>
-          <p className="text-sm text-muted-foreground truncate flex-1">
+    <Card 
+      className={`w-full hover:shadow-md transition-all duration-200 border hover:border-primary/30 ${
+        onClick ? 'cursor-pointer' : ''
+      }`}
+      onClick={onClick}
+    >
+      <CardContent className="p-6">
+        <div className="flex flex-col space-y-3">
+          {/* Header com título e ano */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            <h3 className="text-lg font-semibold leading-tight hover:text-primary transition-colors flex-1">
+              {title}
+            </h3>
+            <Badge variant="outline" className="text-xs self-start">
+              {year}
+            </Badge>
+          </div>
+          
+          {/* Informações da publicação */}
+          <p className="text-sm text-muted-foreground">
             {publicationInfo}
           </p>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-sm text-muted-foreground leading-relaxed">
-          <p className="italic mb-1">Abstract:</p>
-          <p className="line-clamp-4">
-            {highlightText(abstractHighlight, searchTerm)}
-          </p>
+          
+          {/* Abstract */}
+          <div className="text-sm text-muted-foreground leading-relaxed">
+            <p className="italic mb-1">Abstract:</p>
+            <p className="line-clamp-3">
+              {highlightText(abstractHighlight, searchTerm)}
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>
